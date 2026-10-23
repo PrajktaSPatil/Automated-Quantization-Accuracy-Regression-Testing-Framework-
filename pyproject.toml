@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantguard"
+version = "0.1.0"
+description = "Quantization quality regression and release gating."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2",
+  "pyyaml>=6",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+gpu = [
+  "accelerate",
+  "huggingface_hub",
+  "lm-eval",
+  "numpy",
+  "safetensors",
+  "torch",
+  "torchao",
+  "transformers",
+]
+dev = ["pytest>=8"]
+
+[project.scripts]
+quantguard = "quantguard.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

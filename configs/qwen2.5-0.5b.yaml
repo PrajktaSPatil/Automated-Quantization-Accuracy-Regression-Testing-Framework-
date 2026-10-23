@@ -1,0 +1,55 @@
+name: qwen2.5-0.5b-int8
+baseline:
+  model_id: Qwen/Qwen2.5-0.5B
+  version: "1.0.0"
+  revision: "060db6499f32faf8b98477b0a26969ef7d8b9987"
+  precision: fp16
+  quantization_method: null
+  artifact_uri: hf://Qwen/Qwen2.5-0.5B@060db6499f32faf8b98477b0a26969ef7d8b9987
+  status: approved
+candidate:
+  model_id: Qwen/Qwen2.5-0.5B
+  version: "1.0.0-int8"
+  revision: "060db6499f32faf8b98477b0a26969ef7d8b9987"
+  precision: int8
+  quantization_method: torchao-int8-weight-only
+  quantization_config: {}
+  source_model_id: Qwen/Qwen2.5-0.5B
+  source_version: "1.0.0"
+  artifact_uri: hf://Qwen/Qwen2.5-0.5B@060db6499f32faf8b98477b0a26969ef7d8b9987
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks:
+    - arc_easy
+  batch_size: 1
+  device: cuda
+  dtype: float16
+  seed: 0
+quality_policy:
+  default:
+    scale: proportion
+    max_regression_pp: 0.5
+    required: true
+  tasks:
+    arc_easy:
+      scale: proportion
+      max_regression_pp: 0.5
+performance_policy:
+  latency_ms:
+    max_regression_percent: 10
+    required: false
+  gpu_memory_mib:
+    max_regression_percent: 5
+    required: false
+  model_size_bytes:
+    max_regression_percent: 5
+    required: true
+performance:
+  warmup_iterations: 2
+  measured_iterations: 5
+  max_new_tokens: 8
+  prompts:
+    - The capital of France is
+database_path: quantguard.sqlite
+report_dir: reports

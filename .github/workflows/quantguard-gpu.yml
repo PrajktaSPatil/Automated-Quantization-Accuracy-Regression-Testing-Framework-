@@ -1,0 +1,24 @@
+name: quantguard-gpu
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  release-gate:
+    runs-on: [self-hosted, windows, gpu]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run QuantGuard
+        shell: pwsh
+        env:
+          HF_HOME: E:\hf-cache
+        run: |
+          E:\quantguard-venv\Scripts\python.exe -m pip install -e ".[gpu]"
+          E:\quantguard-venv\Scripts\quantguard.exe run --config configs/qwen2.5-0.5b.yaml
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantguard-report
+          path: reports/
