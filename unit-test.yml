@@ -1,0 +1,19 @@
+name: unit-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install QuantGuard without GPU packages
+        run: pip install -e ".[dev]"
+      - name: Run unit and CLI tests
+        run: pytest
