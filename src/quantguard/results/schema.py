@@ -18,8 +18,6 @@ class NormalizedMetric(BaseModel):
     model_version: str
     evaluation_config_hash: str
     timestamp: str
-
-
 class NormalizedEvaluation(BaseModel):
     backend: str
     backend_version: str
