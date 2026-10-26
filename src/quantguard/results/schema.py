@@ -7,9 +7,11 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+
 class NormalizedMetric(BaseModel):
     name: str
     value: float
+    standard_error: float | None = None
     higher_is_better: bool
     task: str
     model_id: str
