@@ -1,0 +1,27 @@
+name: quantguard-gpu
+
+# Tier 2. Nightly and on demand, on a self-hosted GPU runner. Deliberately NOT triggered
+# by pull_request: a self-hosted runner must not execute code from untrusted forks.
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 21:00 UTC (02:30 IST)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/quantguard
+        with:
+          config: configs/nightly-gpu.yaml
+          extras: gpu
+          # On the existing Windows runner, point these at the prepared environment, e.g.
+          # python-command: E:\quantguard-venv\Scripts\python.exe
+          # hf-home: E:\hf-cache
+          # setup-python: "false"
+          post-comment: "false"

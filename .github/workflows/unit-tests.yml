@@ -1,0 +1,39 @@
+name: unit-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install QuantGuard without GPU packages
+        run: pip install -e ".[dev]"
+      - name: Run unit and integration tests
+        run: pytest -q
+
+  injected-regressions:
+    # Proves the gate still catches known-bad quantization and spares equivalent models.
+    # Pure numpy: no GPU, no model download, about a minute.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Injection suite on the toy backend
+        run: >
+          quantguard inject-suite --config configs/toy-validation.yaml --backend toy
+          --output reports/injection.md --min-detection 1.0 --max-false-alarms 0.0
+      - name: Publish result
+        if: always()
+        run: cat reports/injection.md >> "$GITHUB_STEP_SUMMARY"

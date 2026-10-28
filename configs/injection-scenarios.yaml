@@ -1,0 +1,34 @@
+# Used by: quantguard validate-injection --config <cfg> --scenarios configs/injection-scenarios.yaml
+# `detect`: a real regression the gate must FAIL.  `clean`: an equivalent model it must not FAIL.
+# These use the rtn-fakequant injector, which simulates the *effect* of each mistake
+# (it is not GPTQ/AWQ). Both the `detect` and `clean` labels are expectations, not results:
+# run them, and re-label any scenario whose real outcome disagrees before trusting the rates.
+scenarios:
+  - name: control-8bit-per-channel
+    expect: clean
+    description: 8-bit per-channel weights, near-lossless
+    candidate: {quantization_method: rtn-fakequant, precision: int8, quantization_config: {bits: 8}}
+  - name: control-8bit-group128
+    expect: clean
+    description: 8-bit grouped weights, near-lossless
+    candidate: {quantization_method: rtn-fakequant, precision: int8, quantization_config: {bits: 8, group_size: 128}}
+  - name: control-6bit-group64
+    expect: clean
+    description: 6-bit grouped weights, expected to be close to baseline
+    candidate: {quantization_method: rtn-fakequant, precision: int6, quantization_config: {bits: 6, group_size: 64}}
+  - name: bad-2bit-group128
+    expect: detect
+    description: 2-bit weights
+    candidate: {quantization_method: rtn-fakequant, precision: int2, quantization_config: {bits: 2, group_size: 128}}
+  - name: bad-3bit-per-tensor
+    expect: detect
+    description: 3-bit weights with a single scale for the whole tensor
+    candidate: {quantization_method: rtn-fakequant, precision: int3, quantization_config: {bits: 3, group_size: -1}}
+  - name: bad-4bit-per-tensor
+    expect: detect
+    description: wrong group size, 4-bit weights with one scale per tensor
+    candidate: {quantization_method: rtn-fakequant, precision: int4, quantization_config: {bits: 4, group_size: -1}}
+  - name: bad-4bit-poor-calibration
+    expect: detect
+    description: 4-bit grouped weights whose range is badly estimated (clipped to 30%)
+    candidate: {quantization_method: rtn-fakequant, precision: int4, quantization_config: {bits: 4, group_size: 128, clip_ratio: 0.3}}

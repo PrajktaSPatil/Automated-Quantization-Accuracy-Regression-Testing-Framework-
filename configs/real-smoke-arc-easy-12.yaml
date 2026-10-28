@@ -1,0 +1,58 @@
+name: real-smollm2-arc-easy-12
+baseline:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: 1.0.0
+  revision: main
+  precision: fp32
+  quantization_method: null
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M@main
+  status: approved
+candidate:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: 1.0.0-w8
+  revision: main
+  precision: int8-simulated
+  quantization_method: fake-rtn
+  quantization_config:
+    bits: 8
+    group_size: 128
+  source_model_id: HuggingFaceTB/SmolLM2-135M
+  source_version: 1.0.0
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M@main
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks:
+  - arc_easy
+  batch_size: 8
+  max_length: 1024
+  limit: 12
+  device: cpu
+  dtype: float32
+  seed: 0
+  paired: false
+quality_policy:
+  confidence_z: 1.645
+  on_uncertain: warn
+  default:
+    scale: proportion
+    max_regression_pp: 3.0
+  tasks:
+    arc_easy:
+      scale: proportion
+      max_regression_pp: 3.0
+      only_listed_metrics: true
+      metrics:
+        acc:
+          scale: proportion
+          max_regression_pp: 3.0
+    wikitext:
+      only_listed_metrics: true
+      metrics:
+        word_perplexity:
+          scale: relative
+          max_regression_percent: 2.0
+baseline_store: null
+performance_policy: {}
+database_path: reports/real-smoke/quantguard.sqlite
+report_dir: reports/real-smoke

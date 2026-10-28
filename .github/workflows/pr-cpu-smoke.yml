@@ -1,0 +1,35 @@
+name: pr-cpu-smoke
+
+# Tier 1: every pull request, GitHub-hosted runner, no GPU.
+# Small model, small sample, cached model and dataset downloads.
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "configs/**"
+      - "baselines/**"
+      - "action.yml"
+      - "pyproject.toml"
+      - ".github/workflows/pr-cpu-smoke.yml"
+
+concurrency:
+  group: quantguard-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          config: configs/cpu-smoke.yaml
+          install-extras: eval
+          torch-index-url: https://download.pytorch.org/whl/cpu
+          extra-args: --skip-performance

@@ -1,0 +1,265 @@
+{
+  "baseline": {
+    "artifact_uri": "hf://HuggingFaceTB/SmolLM2-135M@main",
+    "model_id": "HuggingFaceTB/SmolLM2-135M",
+    "precision": "fp32",
+    "quantization_config": {},
+    "quantization_method": null,
+    "revision": "main",
+    "source_model_id": null,
+    "source_version": null,
+    "status": "approved",
+    "version": "1.0.0"
+  },
+  "baseline_evaluation": {
+    "backend": "lm_eval",
+    "backend_version": "0.4.13",
+    "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+    "metadata": {
+      "config": {
+        "batch_size": 8,
+        "batch_sizes": [],
+        "bootstrap_iters": 100000,
+        "device": "cpu",
+        "fewshot_seed": 0,
+        "gen_kwargs": null,
+        "limit": 12,
+        "model": "HuggingFaceTB/SmolLM2-135M",
+        "model_args": null,
+        "model_dtype": "torch.float32",
+        "model_num_parameters": 134515008,
+        "model_revision": "main",
+        "model_sha": "",
+        "numpy_seed": 0,
+        "random_seed": 0,
+        "torch_seed": 0,
+        "use_cache": null
+      },
+      "n_shot": {
+        "arc_easy": 0
+      },
+      "versions": {
+        "arc_easy": 1.0
+      }
+    },
+    "metrics": [
+      {
+        "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+        "higher_is_better": true,
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "model_version": "1.0.0",
+        "n_samples": null,
+        "name": "acc",
+        "samples": null,
+        "stderr": 0.1486470975026408,
+        "task": "arc_easy",
+        "timestamp": "2026-10-28T18:01:50.574582+00:00",
+        "value": 0.4166666666666667
+      },
+      {
+        "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+        "higher_is_better": true,
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "model_version": "1.0.0",
+        "n_samples": null,
+        "name": "acc_norm",
+        "samples": null,
+        "stderr": 0.11236664374387369,
+        "task": "arc_easy",
+        "timestamp": "2026-10-28T18:01:50.574582+00:00",
+        "value": 0.16666666666666666
+      }
+    ],
+    "model_id": "HuggingFaceTB/SmolLM2-135M",
+    "model_version": "1.0.0",
+    "per_sample": {
+      "arc_easy": {}
+    },
+    "raw_result_path": null
+  },
+  "baseline_performance": null,
+  "baseline_source": "evaluated",
+  "candidate": {
+    "artifact_uri": "hf://HuggingFaceTB/SmolLM2-135M@main",
+    "model_id": "HuggingFaceTB/SmolLM2-135M",
+    "precision": "int8-simulated",
+    "quantization_config": {
+      "bits": 8,
+      "group_size": 128
+    },
+    "quantization_method": "fake-rtn",
+    "revision": "main",
+    "source_model_id": "HuggingFaceTB/SmolLM2-135M",
+    "source_version": "1.0.0",
+    "status": "candidate",
+    "version": "1.0.0-w8"
+  },
+  "candidate_evaluation": {
+    "backend": "lm_eval",
+    "backend_version": "0.4.13",
+    "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+    "metadata": {
+      "config": {
+        "batch_size": 8,
+        "batch_sizes": [],
+        "bootstrap_iters": 100000,
+        "device": "cpu",
+        "fewshot_seed": 0,
+        "gen_kwargs": null,
+        "limit": 12,
+        "model": "HuggingFaceTB/SmolLM2-135M",
+        "model_args": null,
+        "model_dtype": "torch.float32",
+        "model_num_parameters": 134515008,
+        "model_revision": "main",
+        "model_sha": "",
+        "numpy_seed": 0,
+        "random_seed": 0,
+        "torch_seed": 0,
+        "use_cache": null
+      },
+      "n_shot": {
+        "arc_easy": 0
+      },
+      "versions": {
+        "arc_easy": 1.0
+      }
+    },
+    "metrics": [
+      {
+        "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+        "higher_is_better": true,
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "model_version": "1.0.0-w8",
+        "n_samples": null,
+        "name": "acc",
+        "samples": null,
+        "stderr": 0.1486470975026408,
+        "task": "arc_easy",
+        "timestamp": "2026-10-28T18:01:50.580585+00:00",
+        "value": 0.4166666666666667
+      },
+      {
+        "evaluation_config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+        "higher_is_better": true,
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "model_version": "1.0.0-w8",
+        "n_samples": null,
+        "name": "acc_norm",
+        "samples": null,
+        "stderr": 0.11236664374387369,
+        "task": "arc_easy",
+        "timestamp": "2026-10-28T18:01:50.580585+00:00",
+        "value": 0.16666666666666666
+      }
+    ],
+    "model_id": "HuggingFaceTB/SmolLM2-135M",
+    "model_version": "1.0.0-w8",
+    "per_sample": {
+      "arc_easy": {}
+    },
+    "raw_result_path": null
+  },
+  "candidate_performance": null,
+  "comparisons": [
+    {
+      "absolute_difference": 0.0,
+      "baseline_stderr": 0.1486470975026408,
+      "baseline_value": 0.4166666666666667,
+      "candidate_stderr": 0.1486470975026408,
+      "candidate_value": 0.4166666666666667,
+      "difference_stderr": null,
+      "higher_is_better": true,
+      "metric": "acc",
+      "paired": false,
+      "regression_amount": 0.0,
+      "regression_pp": 0.0,
+      "regression_relative_pct": 0.0,
+      "relative_change": 0.0,
+      "status": "unchanged",
+      "stderr_diff": 0.21021874129563045,
+      "stderr_method": null,
+      "task": "arc_easy"
+    },
+    {
+      "absolute_difference": 0.0,
+      "baseline_stderr": 0.11236664374387369,
+      "baseline_value": 0.16666666666666666,
+      "candidate_stderr": 0.11236664374387369,
+      "candidate_value": 0.16666666666666666,
+      "difference_stderr": null,
+      "higher_is_better": true,
+      "metric": "acc_norm",
+      "paired": false,
+      "regression_amount": 0.0,
+      "regression_pp": 0.0,
+      "regression_relative_pct": 0.0,
+      "relative_change": 0.0,
+      "status": "unchanged",
+      "stderr_diff": 0.15891043154093207,
+      "stderr_method": null,
+      "task": "arc_easy"
+    }
+  ],
+  "config_hash": "89611cbd37f749faafc63c4cfdf02434afa05a8b9177e4aa5957ea51543ef208",
+  "created_at": "2026-10-28T17:56:45.609006+00:00",
+  "decision": {
+    "checks": [
+      {
+        "metric": "acc",
+        "noise_display": "independent stderr 21.02 pp",
+        "observed_display": "0.00 pp",
+        "reason": "regression 0.00 pp within maximum 3.00 pp",
+        "reference": "baseline",
+        "required": true,
+        "scope": "quality",
+        "status": "pass",
+        "task": "arc_easy",
+        "threshold_display": "maximum 3.00 pp"
+      }
+    ],
+    "exit_code": 0,
+    "reasons": [
+      "All required policies passed."
+    ],
+    "status": "PASS"
+  },
+  "environment": {
+    "compute_capability": null,
+    "cuda_version": null,
+    "git_sha": null,
+    "gpu_name": null,
+    "gpu_total_mib": null,
+    "packages": {
+      "accelerate": "1.15.0",
+      "lm-eval": "0.4.13",
+      "numpy": "2.5.4",
+      "pydantic": "2.14.1",
+      "torch": "2.14.1+cpu",
+      "transformers": "5.21.0",
+      "typer": "0.27.3"
+    },
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.14",
+    "torch_version": "2.14.1+cpu"
+  },
+  "evaluation": {
+    "backend": "lm_eval",
+    "batch_size": 8,
+    "device": "cpu",
+    "dtype": "float32",
+    "limit": 12,
+    "max_length": 1024,
+    "num_fewshot": null,
+    "paired": false,
+    "seed": 0,
+    "tasks": [
+      "arc_easy"
+    ]
+  },
+  "experiment_id": "exp_0f7dce1a34a2418ba101ef17ca22993d",
+  "name": "real-smollm2-arc-easy-12",
+  "notes": [],
+  "previous_release": null,
+  "previous_release_comparisons": []
+}

@@ -1,0 +1,61 @@
+# CPU tier: runs on a GitHub-hosted runner on every pull request.
+# A small model and a small --limit keep it to a few minutes. At this sample size the
+# accuracy standard error is several points, so the smoke tier is meant to catch
+# catastrophic breakage and pipeline errors; the nightly GPU tier carries the tight
+# thresholds. Perplexity has no sampling noise and is the sharper check here.
+#
+# Pin `revision` to a commit hash before relying on this config (find it on the model's
+# "Files and versions" page); "main" is only a placeholder.
+name: smollm2-135m-cpu
+baseline:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: "1.0.0"
+  revision: main
+  precision: fp32
+  quantization_method: null
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M@main
+  status: approved
+candidate:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: "1.0.0-w8"
+  revision: main
+  precision: int8-simulated
+  quantization_method: fake-rtn
+  quantization_config: {bits: 8, group_size: 128}
+  source_model_id: HuggingFaceTB/SmolLM2-135M
+  source_version: "1.0.0"
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M@main
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks: [arc_easy, wikitext]
+  batch_size: 8
+  max_length: 1024
+  limit: 60
+  device: cpu
+  dtype: float32
+  seed: 0
+  paired: true
+quality_policy:
+  confidence_z: 1.645
+  on_uncertain: warn
+  default: {scale: proportion, max_regression_pp: 3.0}
+  tasks:
+    arc_easy:
+      scale: proportion
+      max_regression_pp: 3.0
+      only_listed_metrics: true
+      metrics:
+        acc: {scale: proportion, max_regression_pp: 3.0}
+    wikitext:
+      only_listed_metrics: true
+      metrics:
+        word_perplexity: {scale: relative, max_regression_percent: 2.0}
+baseline_store:
+  directory: baselines
+  name: smollm2-135m-cpu
+  use_stored_baseline: true
+  compare_previous_release: true
+performance_policy: {}
+database_path: reports/quantguard.sqlite
+report_dir: reports

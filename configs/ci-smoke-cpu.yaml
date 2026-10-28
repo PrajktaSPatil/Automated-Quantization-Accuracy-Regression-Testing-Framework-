@@ -1,0 +1,54 @@
+# Tier 1: runs on every pull request on a GitHub-hosted CPU runner.
+# Purpose: prove the pipeline works end to end and catch gross regressions cheaply.
+# A tiny model and a small --limit mean wide noise bands, so only large drops FAIL;
+# smaller drops show up as WARNING (inconclusive). The nightly GPU tier is the real gate.
+#
+# BEFORE RELYING ON THIS: pin `revision` to a commit SHA of the model repo you choose
+# (HF model page -> "Files and versions" -> commit hash). The model id below is a
+# placeholder that was not verified from this environment.
+name: ci-smoke-cpu
+baseline:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: "1.0.0"
+  revision: null
+  precision: fp32
+  quantization_method: null
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M
+  status: approved
+candidate:
+  model_id: HuggingFaceTB/SmolLM2-135M
+  version: "1.0.0-int8-rtn"
+  revision: null
+  precision: int8
+  quantization_method: rtn-fakequant
+  quantization_config:
+    bits: 8
+    group_size: null
+  source_model_id: HuggingFaceTB/SmolLM2-135M
+  source_version: "1.0.0"
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks:
+    - arc_easy
+  batch_size: 8
+  limit: 200
+  device: cpu
+  dtype: float32
+  seed: 0
+  log_samples: true
+quality_policy:
+  default:
+    scale: proportion
+    max_regression_pp: 3.0
+    required: true
+    confidence_z: 1.96
+    on_inconclusive: warn
+baseline_store:
+  directory: baselines
+  baseline_label: smoke-cpu-fp32
+  on_stale: evaluate
+  save_if_missing: false
+database_path: quantguard.sqlite
+report_dir: reports

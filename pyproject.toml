@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantguard"
+version = "0.1.0"
+description = "Quantization quality regression and release gating."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy",
+  "pydantic>=2",
+  "pyyaml>=6",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Everything needed to run lm-eval on a CPU (install a CPU torch wheel separately in CI).
+eval = [
+  "accelerate",
+  "huggingface_hub",
+  "lm-eval",
+  "safetensors",
+  "transformers",
+]
+gpu = [
+  "quantguard[eval]",
+  "torch",
+  "torchao",
+]
+dev = ["pytest>=8"]
+
+[project.scripts]
+quantguard = "quantguard.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/integration", "tests/unit"]
+pythonpath = ["src"]

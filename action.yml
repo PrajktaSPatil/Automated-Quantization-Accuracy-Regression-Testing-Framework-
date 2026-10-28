@@ -1,0 +1,158 @@
+name: QuantGuard regression gate
+description: >
+  Evaluate a quantized model against its approved FP16 baseline (and the previous release),
+  apply noise-aware thresholds, fail the job on a real regression, and report on the pull request.
+author: quantguard
+
+inputs:
+  config:
+    description: Path to the QuantGuard YAML config, relative to the working directory.
+    required: true
+  working-directory:
+    description: Directory containing the QuantGuard checkout.
+    default: "."
+  python-version:
+    description: Python version to install. Leave empty on self-hosted runners that already provide one.
+    default: "3.11"
+  install-extras:
+    description: pip extras to install ("eval" for CPU, "gpu" for CUDA runners).
+    default: eval
+  torch-index-url:
+    description: Optional pip index for torch (use https://download.pytorch.org/whl/cpu on hosted runners).
+    default: ""
+  constraints-file:
+    description: Optional pip constraints file that pins library versions.
+    default: requirements/constraints.txt
+  hf-home:
+    description: Hugging Face cache directory. Cached between runs.
+    default: ${{ github.workspace }}/.hf-cache
+  record-release:
+    description: Store the candidate scores as a release when the gate passes ("true"/"false").
+    default: "false"
+  extra-args:
+    description: Extra arguments for `quantguard run`, e.g. "--skip-performance --limit 200".
+    default: ""
+  post-comment:
+    description: Post or update the pull-request comment ("true"/"false").
+    default: "true"
+
+outputs:
+  status:
+    description: PASS, WARNING, FAIL or ERROR.
+    value: ${{ steps.result.outputs.status }}
+  report-dir:
+    description: Directory holding report.md, report.html and report.json.
+    value: ${{ steps.result.outputs.report_dir }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      if: inputs.python-version != ''
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+        cache-dependency-path: ${{ inputs.working-directory }}/pyproject.toml
+
+    - name: Restore model and dataset cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.hf-home }}
+        # Keyed on the config, which pins model revisions and task lists. Changing either
+        # (a new model revision, a new task) invalidates the cache; otherwise runs reuse it.
+        key: hf-${{ runner.os }}-${{ hashFiles(format('{0}/{1}', inputs.working-directory, inputs.config)) }}
+        restore-keys: |
+          hf-${{ runner.os }}-
+
+    - name: Install QuantGuard
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        TORCH_INDEX_URL: ${{ inputs.torch-index-url }}
+        CONSTRAINTS: ${{ inputs.constraints-file }}
+        EXTRAS: ${{ inputs.install-extras }}
+      run: |
+        python -m pip install --upgrade pip
+        constraint_args=()
+        if [ -f "$CONSTRAINTS" ]; then constraint_args=(-c "$CONSTRAINTS"); fi
+        if [ -n "$TORCH_INDEX_URL" ]; then
+          python -m pip install "${constraint_args[@]}" torch --index-url "$TORCH_INDEX_URL"
+        fi
+        python -m pip install "${constraint_args[@]}" -e ".[${EXTRAS}]"
+
+    - name: Run the release gate
+      id: gate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        HF_HOME: ${{ inputs.hf-home }}
+        CONFIG: ${{ inputs.config }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        RECORD: ${{ inputs.record-release }}
+        PYTHONHASHSEED: "0"
+      run: |
+        set +e
+        args=(--config "$CONFIG")
+        if [ "$RECORD" = "true" ]; then args+=(--record-release); fi
+        # shellcheck disable=SC2086
+        quantguard run "${args[@]}" $EXTRA_ARGS > quantguard_result.json
+        code=$?
+        cat quantguard_result.json
+        echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Build report and PR comment
+      id: result
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        report_dir=$(python -c "import json;print(json.load(open('quantguard_result.json')).get('report_dir',''))" 2>/dev/null || true)
+        status=$(python -c "import json;print(json.load(open('quantguard_result.json')).get('status','ERROR'))" 2>/dev/null || echo ERROR)
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "report_dir=$report_dir" >> "$GITHUB_OUTPUT"
+        if [ -n "$report_dir" ] && [ -f "$report_dir/report.json" ]; then
+          quantguard pr-comment --report "$report_dir/report.json" --output pr_comment.md --run-url "$RUN_URL"
+          cat pr_comment.md >> "$GITHUB_STEP_SUMMARY"
+        else
+          printf '<!-- quantguard-report -->\n## QuantGuard: ERROR\n\nThe run did not produce a report. See the job log.\n' > pr_comment.md
+        fi
+
+    - name: Post or update the pull-request comment
+      if: always() && inputs.post-comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      continue-on-error: true   # fork PRs get a read-only token
+      env:
+        COMMENT_FILE: ${{ inputs.working-directory }}/pr_comment.md
+      with:
+        script: |
+          const fs = require('fs');
+          const body = fs.readFileSync(process.env.COMMENT_FILE, 'utf8');
+          const marker = '<!-- quantguard-report -->';
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+          const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+          const existing = comments.find(c => c.body && c.body.startsWith(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }
+
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: quantguard-report-${{ github.run_id }}-${{ github.job }}
+        path: |
+          ${{ inputs.working-directory }}/reports/
+          ${{ inputs.working-directory }}/pr_comment.md
+        if-no-files-found: ignore
+
+    - name: Fail the job if the gate failed
+      if: always() && steps.gate.outputs.exit_code != '0'
+      shell: bash
+      run: |
+        echo "QuantGuard exited with code ${{ steps.gate.outputs.exit_code }} (1 = regression, 2 = error)."
+        exit ${{ steps.gate.outputs.exit_code || 2 }}

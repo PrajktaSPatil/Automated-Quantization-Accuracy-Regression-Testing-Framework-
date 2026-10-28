@@ -1,0 +1,40 @@
+# No GPU, no network. Exercises the whole gate on a numpy classifier damaged by the same
+# fake-rtn quantizer used for real-model injection. Used by CI to prove the gate still
+# detects injected regressions and does not flag equivalent models.
+name: toy
+baseline:
+  model_id: toy/mlp
+  version: "fp32"
+  precision: fp32
+  artifact_uri: toy://mlp
+  status: approved
+candidate:
+  model_id: toy/mlp
+  version: "candidate"
+  precision: int8
+  quantization_method: fake-rtn
+  quantization_config: {bits: 8, group_size: 128}
+  source_model_id: toy/mlp
+  source_version: "fp32"
+  artifact_uri: toy://mlp
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks: [toy_cls]
+  limit: 3000
+  device: cpu
+  dtype: float32
+  seed: 0
+quality_policy:
+  confidence_z: 1.645
+  on_uncertain: warn
+  default: {scale: proportion, max_regression_pp: 1.0}
+  tasks:
+    toy_cls:
+      scale: proportion
+      max_regression_pp: 1.0
+      only_listed_metrics: true
+      metrics:
+        acc: {scale: proportion, max_regression_pp: 1.0}
+database_path: reports/toy/quantguard.sqlite
+report_dir: reports/toy

@@ -1,0 +1,30 @@
+name: quantguard-smoke
+
+# Tier 1. Every pull request, GitHub-hosted CPU runner, tiny model, small --limit.
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "configs/**"
+      - "baselines/**"
+      - "pyproject.toml"
+      - ".github/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: quantguard-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/quantguard
+        with:
+          config: configs/ci-smoke-cpu.yaml
+          extras: gpu

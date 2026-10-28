@@ -1,0 +1,63 @@
+name: nightly-gpu
+
+# Tier 2: full evaluation on a self-hosted GPU runner. Nightly, on demand, and callable
+# from other repositories' release pipelines (`uses: <org>/<repo>/.github/workflows/nightly-gpu.yml@v1`).
+# Runner labels: self-hosted + gpu. Git Bash must be available on Windows runners.
+
+on:
+  schedule:
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+    inputs:
+      config:
+        description: Config file to evaluate
+        default: configs/qwen2.5-0.5b.yaml
+      record_release:
+        description: Store scores as a release when the gate passes
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      config:
+        type: string
+        default: configs/qwen2.5-0.5b.yaml
+      record_release:
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # needed only to commit recorded releases
+  pull-requests: write
+
+jobs:
+  release-gate:
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: gate
+        with:
+          config: ${{ inputs.config || 'configs/qwen2.5-0.5b.yaml' }}
+          python-version: ""            # use the runner's own environment
+          install-extras: gpu
+          hf-home: ${{ vars.HF_HOME || format('{0}/.hf-cache', github.workspace) }}
+          record-release: ${{ inputs.record_release && 'true' || 'false' }}
+      - name: Commit recorded release scores
+        if: inputs.record_release && steps.gate.outputs.status != 'FAIL' && steps.gate.outputs.status != 'ERROR'
+        shell: bash
+        run: |
+          git config user.name "quantguard[bot]"
+          git config user.email "quantguard@users.noreply.github.com"
+          git add baselines
+          git diff --cached --quiet || git commit -m "Record release scores" && git push
+      - name: Trend chart
+        if: always()
+        shell: bash
+        run: quantguard trend --config "${{ inputs.config || 'configs/qwen2.5-0.5b.yaml' }}" --output reports/trend.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quantguard-trend
+          path: reports/trend.html
+          if-no-files-found: ignore

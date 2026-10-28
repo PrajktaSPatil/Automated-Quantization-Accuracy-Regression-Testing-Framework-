@@ -1,0 +1,54 @@
+# Tier 2: nightly or on a self-hosted GPU runner. Full tasks, no --limit.
+# Thresholds below are starting points to tune with the threshold experiments
+# (see docs/experiments.md), not measured recommendations.
+name: nightly-gpu-qwen2.5-0.5b-int8
+baseline:
+  model_id: Qwen/Qwen2.5-0.5B
+  version: "1.0.0"
+  revision: "060db6499f32faf8b98477b0a26969ef7d8b9987"
+  precision: fp16
+  quantization_method: null
+  artifact_uri: hf://Qwen/Qwen2.5-0.5B@060db6499f32faf8b98477b0a26969ef7d8b9987
+  status: approved
+candidate:
+  model_id: Qwen/Qwen2.5-0.5B
+  version: "1.0.0-int8"
+  revision: "060db6499f32faf8b98477b0a26969ef7d8b9987"
+  precision: int8
+  quantization_method: torchao-int8-weight-only
+  quantization_config: {}
+  source_model_id: Qwen/Qwen2.5-0.5B
+  source_version: "1.0.0"
+  artifact_uri: hf://Qwen/Qwen2.5-0.5B@060db6499f32faf8b98477b0a26969ef7d8b9987
+  status: candidate
+evaluation:
+  backend: lm_eval
+  tasks:
+    - arc_easy
+    - hellaswag
+    - wikitext
+  batch_size: 1
+  device: cuda
+  dtype: float16
+  seed: 0
+  log_samples: true
+quality_policy:
+  default:
+    scale: proportion
+    max_regression_pp: 1.0
+    required: true
+  tasks:
+    # Perplexity (lower is better) has no standard error in lm-eval, so it is
+    # gated on a relative limit instead of the noise-aware rule.
+    wikitext:
+      scale: raw
+      max_regression_relative_percent: 3.0
+      required: true
+baseline_store:
+  directory: baselines
+  baseline_label: qwen2.5-0.5b-fp16
+  previous_release_label: null
+  on_stale: error
+  save_if_missing: false
+database_path: quantguard.sqlite
+report_dir: reports
