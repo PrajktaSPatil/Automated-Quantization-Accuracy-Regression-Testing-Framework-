@@ -1,7 +1,6 @@
 ﻿"""Load a Hugging Face causal LM and optionally apply torchao INT8 weights."""
 
 from __future__ import annotations
-
 from typing import Any
 
 from typing import TYPE_CHECKING
