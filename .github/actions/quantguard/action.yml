@@ -7,7 +7,7 @@ inputs:
     description: Path to the QuantGuard YAML config, relative to the workspace.
     required: true
   extras:
-    description: pip extras to install (for example "gpu,dev").
+    description: pip extras to install, for example "cpu-eval,dev" or "gpu".
     default: gpu
   python-version:
     description: Python version for actions/setup-python. Ignored when setup-python is "false".
@@ -20,7 +20,7 @@ inputs:
     default: python
   constraints:
     description: >
-      pip constraints file that pins library versions (create it with `pip freeze` from a
+      pip constraints file that pins library versions (create it with pip freeze from a
       known-good environment). Used when the file exists.
     default: constraints.txt
   hf-home:
@@ -62,7 +62,6 @@ runs:
           echo "hf_home=${RUNNER_TEMP}/hf-cache" >> "$GITHUB_OUTPUT"
         fi
 
-    # Key on the config: changing a model, revision or task list refreshes the cache.
     - name: Cache models and datasets
       id: cache
       uses: actions/cache@v4
@@ -71,6 +70,14 @@ runs:
         key: hf-${{ runner.os }}-${{ hashFiles(inputs.config) }}
         restore-keys: |
           hf-${{ runner.os }}-
+
+    - name: Install CPU PyTorch
+      if: inputs.extras == 'cpu-eval,dev'
+      shell: bash
+      env:
+        PY: ${{ inputs.python-command }}
+      run: |
+        "$PY" -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
     - name: Install QuantGuard
       shell: bash
@@ -101,17 +108,21 @@ runs:
         code=$?
         elapsed=$(( $(date +%s) - started ))
         set -e
+
         status=$("$PY" -c "import json;print(json.load(open('quantguard-result.json'))['status'])" 2>/dev/null || echo ERROR)
         report_dir=$("$PY" -c "import json;print(json.load(open('quantguard-result.json'))['report_dir'])" 2>/dev/null || echo "")
+
         {
           echo "status=$status"
           echo "report_dir=$report_dir"
           echo "exit_code=$code"
         } >> "$GITHUB_OUTPUT"
+
         {
           echo "### QuantGuard: $status"
           echo "Runtime: ${elapsed}s. Model/dataset cache hit: ${{ steps.cache.outputs.cache-hit || 'false' }}."
         } >> "$GITHUB_STEP_SUMMARY"
+
         if [ -n "$report_dir" ] && [ -f "$report_dir/pr_comment.md" ]; then
           cat "$report_dir/pr_comment.md" >> "$GITHUB_STEP_SUMMARY"
         fi
@@ -137,19 +148,38 @@ runs:
           const fs = require('fs');
           const marker = '<!-- quantguard-report -->';
           let body;
-          try { body = fs.readFileSync(process.env.COMMENT_PATH, 'utf8'); } catch (e) { return; }
+          try {
+            body = fs.readFileSync(process.env.COMMENT_PATH, 'utf8');
+          } catch (e) {
+            return;
+          }
+
           const { owner, repo } = context.repo;
           const issue_number = context.issue.number;
+
           try {
-            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number }
+            );
             const existing = comments.find(c => c.body && c.body.includes(marker));
+
             if (existing) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
             } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body
+              });
             }
           } catch (e) {
-            // Fork pull requests get a read-only token. The job summary still has the report.
             core.warning(`Could not post PR comment: ${e.message}`);
           }
 

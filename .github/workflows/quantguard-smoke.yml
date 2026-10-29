@@ -1,6 +1,5 @@
 name: quantguard-smoke
 
-# Tier 1. Every pull request, GitHub-hosted CPU runner, tiny model, small --limit.
 on:
   pull_request:
     paths:
@@ -27,4 +26,4 @@ jobs:
       - uses: ./.github/actions/quantguard
         with:
           config: configs/ci-smoke-cpu.yaml
-          extras: gpu
+          extras: cpu-eval,dev

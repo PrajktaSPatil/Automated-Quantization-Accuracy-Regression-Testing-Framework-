@@ -10,23 +10,21 @@ name: ci-smoke-cpu
 baseline:
   model_id: HuggingFaceTB/SmolLM2-135M
   version: "1.0.0"
-  revision: null
+  revision: "93efa2f097d58c2a74874c7e644dbc9b0cee75a2"
   precision: fp32
   quantization_method: null
-  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M
+  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M@93efa2f097d58c2a74874c7e644dbc9b0cee75a2
   status: approved
 candidate:
   model_id: HuggingFaceTB/SmolLM2-135M
-  version: "1.0.0-int8-rtn"
-  revision: null
+  version: "1.0.0-int8"
+  revision: "93efa2f097d58c2a74874c7e644dbc9b0cee75a2"
   precision: int8
-  quantization_method: rtn-fakequant
-  quantization_config:
-    bits: 8
-    group_size: null
+  quantization_method: torchao-int8-weight-only
+  quantization_config: {}
   source_model_id: HuggingFaceTB/SmolLM2-135M
   source_version: "1.0.0"
-  artifact_uri: hf://HuggingFaceTB/SmolLM2-135M
+  artifact_uri: "hf://HuggingFaceTB/SmolLM2-135M@93efa2f097d58c2a74874c7e644dbc9b0cee75a2"
   status: candidate
 evaluation:
   backend: lm_eval
