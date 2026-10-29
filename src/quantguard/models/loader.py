@@ -1,4 +1,4 @@
-"""Load a Hugging Face causal LM and optionally apply torchao INT8 weights."""
+﻿"""Load a Hugging Face causal LM and optionally apply torchao INT8 weights."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ def load_causal_lm(
 def apply_torchao_int8(model: PreTrainedModel, quantization_config: dict[str, Any]) -> PreTrainedModel:
     if quantization_config.get("group_size") not in (None,):
         raise CandidateUnavailableError(
-            "torchao-int8-weight-only currently accepts only the default Int8WeightOnlyConfig"
+            "Unsupported group_size for torchao-int8-weight-only; only the default (None) Int8WeightOnlyConfig is supported"
         )
     try:
         from torchao.quantization import Int8WeightOnlyConfig, quantize_
@@ -76,3 +76,4 @@ def parameter_storage_bytes(model: PreTrainedModel) -> int:
         storage = parameter.untyped_storage()
         total += storage.nbytes()
     return total
+
