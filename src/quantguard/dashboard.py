@@ -1,213 +1,377 @@
-"""Small localhost dashboard for existing QuantGuard records and safe smoke runs."""
+<!-- GitHub file: src/quantguard/dashboard_ui.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>QUANTGUARD · Model Quality Control Center</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#080d16; --panel:#101827; --panel2:#131f30; --line:#223149;
+      --text:#edf3fc; --muted:#91a0b7; --blue:#5b9cff; --cyan:#4de0df;
+      --green:#45d483; --amber:#f3b94f; --red:#ff6477; --radius:14px;
+      font-family:Inter,"Segoe UI",system-ui,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-size:14px}
+    button,input,select{font:inherit;color:inherit}
+    button,select,input{background:#101a2a;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+    button{cursor:pointer}button:hover{border-color:var(--blue);background:#16253a}
+    a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+    .layout{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}
+    aside{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);padding:24px 16px;background:#0b111d}
+    .brand{display:flex;gap:11px;align-items:center;padding:4px 8px 26px}
+    .logo{width:36px;height:36px;border-radius:10px;background:#122b47;border:1px solid #244b76;display:grid;place-items:center;color:var(--cyan);font-weight:900}
+    .brand strong{letter-spacing:.12em;font-size:13px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+    .nav-label{font-size:10px;color:#63738b;text-transform:uppercase;letter-spacing:.14em;padding:14px 10px 7px}
+    nav{display:grid;gap:5px}
+    nav button{text-align:left;border:0;background:transparent;color:var(--muted);padding:10px;border-radius:8px}
+    nav button.active,nav button:hover{background:#13233a;color:var(--text)}
+    nav button.active{box-shadow:inset 2px 0 var(--cyan)}
+    .side-foot{position:absolute;bottom:18px;left:24px;color:var(--muted);font-size:11px}
+    main{min-width:0;padding:28px clamp(18px,3vw,42px) 50px;max-width:1700px;width:100%;margin:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:26px}
+    .crumb{color:var(--muted);font-size:12px}.crumb b{color:var(--text)}
+    .live{font-size:11px;color:var(--green);border:1px solid #244b3b;border-radius:99px;padding:6px 10px}
+    h1{font-size:25px;letter-spacing:-.03em;margin:0 0 5px}
+    h2{font-size:14px;margin:0 0 15px}
+    h3{font-size:12px;margin:0 0 12px}
+    .sub{color:var(--muted);margin:0 0 22px;font-size:13px}
+    .page{display:none}.page.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;min-width:0}
+    .span-3{grid-column:span 3}.span-4{grid-column:span 4}.span-5{grid-column:span 5}
+    .span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}
+    .span-12{grid-column:span 12}
+    .kpi-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+    .kpi-value{font-size:27px;font-weight:750;margin:9px 0 3px;letter-spacing:-.03em}
+    .kpi-note{color:var(--muted);font-size:11px}
+    .status{font-weight:800;letter-spacing:.06em}
+    .PASS,.pass{color:var(--green)}.FAIL,.ERROR,.fail{color:var(--red)}
+    .WARNING,.BLOCKED,.SKIPPED,.uncertain{color:var(--amber)}
+    .pill{border:1px solid var(--line);border-radius:99px;padding:4px 8px;font-size:10px;color:var(--muted);white-space:nowrap}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+    .toolbar label{color:var(--muted);font-size:11px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .filters select,.filters input{font-size:12px;min-width:130px}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+    table{border-collapse:collapse;width:100%;min-width:760px;font-size:12px}
+    th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em;background:#0d1522;position:sticky;top:0}
+    tr:last-child td{border-bottom:0}
+    .muted{color:var(--muted)}.small{font-size:11px}
+    .empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed #35445b;border-radius:10px}
+    .decision{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .decision-mark{font-size:24px;font-weight:850}
+    .metric-list{display:grid;gap:8px}
+    .metric-row{display:grid;grid-template-columns:minmax(120px,1fr) repeat(3,minmax(90px,.7fr));gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+    .bar-row{display:grid;grid-template-columns:130px 1fr 110px;align-items:center;gap:10px;margin:13px 0;font-size:11px}
+    .bar-track{height:9px;background:#202c40;border-radius:8px;overflow:hidden;position:relative}
+    .bar{height:100%;border-radius:8px;background:var(--blue)}
+    .bar.candidate{background:var(--cyan)}
+    .bar.threshold{background:var(--amber)}
+    .chart{width:100%;height:250px;display:block}
+    .chart text{fill:var(--muted);font:10px Inter,"Segoe UI",sans-serif}
+    .legend{display:flex;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:8px}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+    pre{white-space:pre-wrap;overflow:auto;max-height:420px;background:#080e18;border:1px solid var(--line);padding:14px;border-radius:9px;color:#b8c9df;font-size:11px}
+    details{border-top:1px solid var(--line);padding:11px 0}
+    summary{cursor:pointer}
+    .notice{color:var(--muted);font-size:11px;line-height:1.55}
+    .error{color:var(--red);white-space:pre-wrap}
+    @media(max-width:950px){.layout{grid-template-columns:190px minmax(0,1fr)}.span-3{grid-column:span 6}.span-4,.span-5,.span-7,.span-8{grid-column:span 12}}
+    @media(max-width:650px){.layout{display:block}aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px}.brand{padding:4px 8px 12px}.nav-label,.side-foot{display:none}nav{display:flex;overflow:auto}nav button{white-space:nowrap;padding:8px}main{padding:20px 13px}.span-3,.span-6{grid-column:span 12}.metric-row{grid-template-columns:1fr 1fr}.bar-row{grid-template-columns:90px 1fr 80px}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand"><div class="logo">Q</div><div><strong>QUANTGUARD</strong><small>Quantization Accuracy Regression Testing Framework</small></div></div>
+    <div class="nav-label">Workspace</div>
+    <nav id="nav">
+      <button class="active" data-page="overview">◈ &nbsp; Command Center</button>
+      <button data-page="accuracy">⌁ &nbsp; Regression Monitor</button>
+      <button data-page="quantization">▤ &nbsp; Quantization Analytics</button>
+      <button data-page="experiments">⌗ &nbsp; Experiment Analytics</button>
+      <button data-page="lab">◎ &nbsp; Regression Testing Lab</button>
+      <button data-page="history">☷ &nbsp; Evaluation History</button>
+      <button data-page="config">⚙ &nbsp; Configuration Center</button>
+    </nav>
+    <div class="side-foot">LOCAL WORKSPACE · READ ONLY REPORTS</div>
+  </aside>
+  <main>
+    <div class="topbar"><div class="crumb">QuantGuard <span> / </span><b id="crumb">Command Center</b></div><div class="toolbar"><span class="live">● LOCAL DATA</span><button id="refresh">↻ Refresh</button></div></div>
+    <div id="alert" class="small error"></div>
 
-from __future__ import annotations
+    <section id="overview" class="page active">
+      <h1>Model quality control center</h1>
+      <p class="sub">Release decisions and measured evidence from your local QuantGuard records.</p>
+      <div class="grid">
+        <article class="card span-3"><div class="kpi-label">Total evaluations</div><div id="k-total" class="kpi-value">—</div><div class="kpi-note">Stored in local experiment history</div></article>
+        <article class="card span-3"><div class="kpi-label">Passed</div><div id="k-pass" class="kpi-value pass">—</div><div class="kpi-note">Gate status PASS</div></article>
+        <article class="card span-3"><div class="kpi-label">Failed</div><div id="k-fail" class="kpi-value fail">—</div><div class="kpi-note">Gate status FAIL or ERROR</div></article>
+        <article class="card span-3"><div class="kpi-label">Warnings / inconclusive</div><div id="k-warn" class="kpi-value uncertain">—</div><div class="kpi-note">Warning, blocked, skipped, or inconclusive</div></article>
+        <article class="card span-7"><h2>Latest regression-gate decision</h2><div id="latest" class="empty">Loading stored evaluations…</div></article>
+        <article class="card span-5"><h2>Tracked models</h2><div id="models" class="empty">Loading…</div></article>
+        <article class="card span-12"><h2>Recent evaluation activity</h2><div id="activity" class="empty">Loading…</div></article>
+      </div>
+    </section>
 
-import json
-import os
-import sqlite3
-import subprocess
-import sys
-import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+    <section id="accuracy" class="page">
+      <h1>Accuracy regression monitor</h1>
+      <p class="sub">Baseline versus candidate values, gate thresholds, and uncertainty from stored comparisons.</p>
+      <div class="grid">
+        <article class="card span-3"><div class="kpi-label">Baseline accuracy</div><div id="a-base" class="kpi-value">—</div><div id="a-base-note" class="kpi-note">Latest available accuracy metric</div></article>
+        <article class="card span-3"><div class="kpi-label">Candidate accuracy</div><div id="a-candidate" class="kpi-value">—</div><div class="kpi-note">Latest available accuracy metric</div></article>
+        <article class="card span-3"><div class="kpi-label">Difference</div><div id="a-delta" class="kpi-value">—</div><div class="kpi-note">Candidate minus baseline</div></article>
+        <article class="card span-3"><div class="kpi-label">Gate decision</div><div id="a-status" class="kpi-value">—</div><div class="kpi-note">From latest stored run</div></article>
+        <article class="card span-12"><h2>Per-task comparison</h2><div id="accuracy-chart" class="empty">No comparable accuracy metrics found.</div><div id="accuracy-table"></div></article>
+      </div>
+    </section>
 
-from quantguard.config.loader import load_config
-from quantguard.exceptions import ConfigurationError
-from quantguard.storage.sqlite import ExperimentStore
+    <section id="quantization" class="page">
+      <h1>Quantization analytics</h1>
+      <p class="sub">Only measured performance fields are shown. Missing measurements remain unavailable.</p>
+      <div class="filters"><select id="q-model"><option value="">All models</option></select><select id="q-method"><option value="">All methods</option></select></div>
+      <div id="quant-table" class="empty">Loading measured quantization metrics…</div>
+    </section>
 
+    <section id="experiments" class="page">
+      <h1>Experiment analytics</h1>
+      <p class="sub">Filter stored runs and compare measured accuracy and runtime trends.</p>
+      <div class="filters">
+        <select id="f-model"><option value="">All models</option></select>
+        <select id="f-method"><option value="">All quantization methods</option></select>
+        <select id="f-task"><option value="">All tasks</option></select>
+        <label class="small muted">From <input id="f-from" type="date"></label>
+        <label class="small muted">To <input id="f-to" type="date"></label>
+      </div>
+      <div class="grid">
+        <article class="card span-6"><h2>Accuracy trend</h2><div id="trend-accuracy" class="empty">No measured accuracy trend.</div></article>
+        <article class="card span-6"><h2>Runtime trend</h2><div id="trend-runtime" class="empty">Runtime not measured.</div></article>
+        <article class="card span-12"><h2>Filtered runs</h2><div id="experiment-table" class="empty">No runs match these filters.</div></article>
+      </div>
+    </section>
 
-_PAGE = r"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QuantGuard · Local evaluation dashboard</title><style>
-:root{color-scheme:dark;--bg:#0b1118;--panel:#121c26;--line:#243444;--muted:#9aabba;--text:#edf4f8;--teal:#5ce1cf;--green:#58d68d;--red:#ff7272;--amber:#ffca67}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% -20%,#17353a 0,transparent 48%),var(--bg);color:var(--text);font:15px/1.5 Inter,Segoe UI,sans-serif}main{max-width:1250px;margin:auto;padding:38px 24px 80px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}.brand{display:flex;gap:13px;align-items:center}.mark{width:38px;height:38px;border:1px solid #377e7b;border-radius:12px;display:grid;place-items:center;color:var(--teal);font-weight:800;font-size:20px}.eyebrow{text-transform:uppercase;letter-spacing:.15em;color:var(--teal);font-size:11px;font-weight:700}.subtitle{color:var(--muted);font-size:13px}.badge{border:1px solid var(--line);border-radius:99px;padding:7px 12px;color:var(--muted);font-size:12px}.hero{display:flex;align-items:end;justify-content:space-between;margin:30px 0 22px}h1{font-size:30px;letter-spacing:-.04em;margin:2px 0 3px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{background:linear-gradient(145deg,#14212c,#101923);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0}.wide{grid-column:span 8}.side{grid-column:span 4}.half{grid-column:span 6}.full{grid-column:span 12}.card h2{font-size:14px;margin:0 0 16px;letter-spacing:.01em}.muted{color:var(--muted)}.status{font-size:25px;font-weight:800;letter-spacing:.04em}.PASS{color:var(--green)}.FAIL,.ERROR{color:var(--red)}.WARNING,.BLOCKED,.SKIPPED{color:var(--amber)}.metric{display:grid;grid-template-columns:1.2fr 1fr .85fr .9fr .7fr;gap:9px;padding:11px 0;border-top:1px solid #22313d;font-size:12px}.metric.head{color:var(--muted);font-size:10px;text-transform:uppercase}.pill{border-radius:99px;padding:3px 8px;background:#26343f;font-size:11px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:13px}.meta span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.meta b{display:block;margin-top:3px;overflow-wrap:anywhere}.row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #22313d;padding:10px 0;font-size:13px}.empty{padding:22px;border:1px dashed #35505f;border-radius:10px;color:var(--muted);text-align:center}.table-wrap{overflow:auto}button,select{background:#182733;color:var(--text);border:1px solid #35505f;border-radius:8px;padding:10px 12px;font:inherit}button{cursor:pointer;background:#174a4a;border-color:#347e78;font-weight:700}button:disabled{opacity:.55;cursor:wait}button:hover{background:#1c5b59}pre{max-height:220px;overflow:auto;background:#0a1118;border-radius:9px;padding:12px;color:#bfd0dc;font-size:12px;white-space:pre-wrap}svg{width:100%;height:210px}.legend{font-size:11px;color:var(--muted)}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.small{font-size:12px}.runbox{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.foot{margin:18px 0;color:var(--muted);font-size:12px}@media(max-width:800px){.wide,.side,.half{grid-column:span 12}.hero{display:block}.badge{display:inline-block;margin-top:14px}.metric{grid-template-columns:1.2fr 1fr .8fr}.metric>*:nth-child(4),.metric>*:last-child{display:none}}
-</style></head><body><main><header><div class="brand"><div class="mark">Q</div><div><b>QuantGuard</b><div class="subtitle">Accuracy regression testing</div></div></div><span class="badge">LOCAL WORKSPACE · READ ONLY REPORTS</span></header>
-<section class="hero"><div><div class="eyebrow">Evaluation overview</div><h1>Model quality, at a glance.</h1><div class="subtitle">Live view of stored runs, gate decisions and measured evidence.</div></div><div class="toolbar"><button onclick="refresh()">↻ Refresh data</button></div></section>
-<div id="alert" class="foot"></div><div class="grid"><section class="card wide"><h2>Latest evaluation <span id="when" class="muted small"></span></h2><div id="latest" class="empty">Loading records…</div></section>
-<section class="card side"><h2>Run a smoke evaluation</h2><p class="muted small">Runs the project's configured candidate comparison. Model downloads may be required.</p><div class="runbox"><select id="config"></select><button id="run" onclick="startRun()">Start run</button></div><div id="runstate" class="foot">No dashboard run started.</div><pre id="logs" hidden></pre></section>
-<section class="card half"><h2>Metric comparison</h2><div id="metrics" class="empty">No stored evaluation yet.</div></section>
-<section class="card half"><h2>Run history</h2><div id="chart" class="empty">History appears after evaluations are recorded.</div><div id="history" class="foot"></div></section>
-<section class="card half"><h2>Experiment evidence</h2><div id="evidence" class="empty">No experiment records found. Simulated validation is not a real model measurement.</div></section>
-<section class="card half"><h2>Model and runtime</h2><div id="metadata" class="empty">No run metadata available.</div></section></div>
-<div class="foot">Data comes from the local SQLite experiment store and report files. Opening this dashboard does not load a model. Not measured values are shown as unavailable.</div></main>
+    <section id="lab" class="page">
+      <h1>Regression testing lab</h1>
+      <p class="sub">Synthetic injection validation is reported separately from real-model evaluation runs.</p>
+      <div class="grid">
+        <article class="card span-6"><h2>Injected-regression scenarios</h2><div id="injection-data" class="empty">No validation result files found.</div></article>
+        <article class="card span-6"><h2>Determinism evidence</h2><div id="determinism-data" class="empty">No determinism result files found.</div></article>
+        <article class="card span-12"><h2>Real-model evaluations</h2><div id="real-runs" class="empty">No real-model runs found.</div></article>
+      </div>
+    </section>
+
+    <section id="history" class="page">
+      <h1>Evaluation history</h1>
+      <p class="sub">Search stored runs, inspect their details, and open generated reports.</p>
+      <div class="filters"><input id="history-search" placeholder="Search run, model, task, or method"><select id="history-status"><option value="">All gate statuses</option><option>PASS</option><option>WARNING</option><option>FAIL</option><option>ERROR</option></select></div>
+      <div id="history-table" class="empty">No stored evaluation history.</div>
+    </section>
+
+    <section id="config" class="page">
+      <h1>Configuration center</h1>
+      <p class="sub">Validated project YAML files and baseline metadata. Evaluation launch uses an existing validated config.</p>
+      <div class="grid">
+        <article class="card span-5"><h2>Validated configurations</h2><div class="toolbar"><select id="config-select"></select><button id="run-button">Start configured evaluation</button></div><div id="run-state" class="notice">No dashboard run started.</div><pre id="run-log" hidden></pre><div id="config-list"></div></article>
+        <article class="card span-7"><h2>Configuration contents</h2><pre id="config-content">Select a validated YAML configuration.</pre></article>
+        <article class="card span-12"><h2>Latest baseline and model metadata</h2><div id="baseline-meta" class="empty">No baseline metadata available.</div></article>
+      </div>
+    </section>
+  </main>
+</div>
 <script>
-const $=x=>document.getElementById(x);let runTimer=null;
-function esc(s){return String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function n(v,d=4){return v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d})}
-async function api(url,opt){let r=await fetch(url,opt);let x=await r.json();if(!r.ok)throw Error(x.error||r.statusText);return x}
-function status(s){return `<b class="status ${esc(s)}">${esc(s||'UNKNOWN')}</b>`}
-function drawChart(runs){if(!runs.length){$('chart').className='empty';$('chart').textContent='History appears after evaluations are recorded.';return}let vals=[];for(const r of [...runs].reverse()){let c=(r.comparisons||[]).find(x=>x.absolute_difference!=null);if(c)vals.push({label:r.created_at?.slice(0,10)||r.experiment_id,value:c.candidate_value,base:c.baseline_value,status:r.decision?.status})}if(!vals.length){$('chart').className='empty';$('chart').textContent='No comparable numeric metric found in stored records.';return}let w=650,h=190,p=34,all=vals.flatMap(x=>[x.value,x.base]),lo=Math.min(...all),hi=Math.max(...all);if(lo===hi){lo-=.01;hi+=.01}let x=i=>p+(w-2*p)*(vals.length===1?.5:i/(vals.length-1)),y=v=>h-p-(h-2*p)*(v-lo)/(hi-lo),line=a=>a.map((q,i)=>`${x(i)},${y(q)}`).join(' ');$('chart').className='';$('chart').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Candidate and baseline trend"><polyline points="${line(vals.map(v=>v.base))}" fill="none" stroke="#667887" stroke-dasharray="5 5"/><polyline points="${line(vals.map(v=>v.value))}" fill="none" stroke="#5ce1cf" stroke-width="3"/>${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.value)}" r="4" fill="#5ce1cf"/>`).join('')}<text x="${p}" y="14" fill="#9aabba" font-size="11">${esc(vals[0].label)} → ${esc(vals.at(-1).label)}</text><text x="${w-p}" y="14" text-anchor="end" fill="#9aabba" font-size="11">${esc(n(hi))}</text></svg><div class="legend">● candidate score &nbsp; · · · baseline score · First comparable metric from each actual run record.</div>`}
-async function refresh(){try{let d=await api('/api/data');$('config').innerHTML=d.configs.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');$('alert').textContent=(d.errors||[]).join(' · ');if(d.error){$('latest').className='empty';$('latest').textContent=d.error;return}let r=d.latest;if(!r){$('latest').className='empty';$('latest').textContent='No runs stored yet. Run a local evaluation from the panel to begin.';$('metrics').className='empty';$('metrics').textContent='No stored evaluation yet.';return}$('latest').className='';$('when').textContent=r.created_at?`· ${esc(r.created_at)}`:'';let checks=r.decision?.checks||[];let comps=r.comparisons||[];$('latest').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">${status(r.decision?.status)}<span class="pill">${esc(r.name||'QuantGuard run')}</span></div><p class="muted">${esc(r.decision?.reasons?.join(' · ')||r.decision?.summary||'Stored evaluation record')}</p><div class="meta"><div><span>Experiment</span><b>${esc(r.experiment_id)}</b></div><div><span>Gate checks</span><b>${checks.filter(x=>x.status==='fail').length} failed · ${checks.filter(x=>x.status==='inconclusive').length} inconclusive</b></div></div>`;
-let rows=comps.filter(c=>c.baseline_value!=null&&c.candidate_value!=null);$('metrics').className='';$('metrics').innerHTML=rows.length?`<div class="metric head"><b>Task / metric</b><b>Baseline → candidate</b><b>Δ / SE</b><b>Threshold</b><b>Decision</b></div>`+rows.map(c=>{let policy=checks.find(x=>x.task===c.task&&x.metric===c.metric&&x.scope==='quality');return `<div class="metric"><b>${esc(c.task)} / ${esc(c.metric)}</b><span>${n(c.baseline_value)} → ${n(c.candidate_value)}</span><span>${n(c.absolute_difference)}${c.regression_pp!=null?' ('+n(c.absolute_difference*100,2)+' pp)':''} / SE ${n(c.difference_stderr)}</span><span>${esc(policy?.threshold_display||'—')}</span><span class="pill">${esc(policy?.status||c.status)}${c.stderr_method?' · '+esc(c.stderr_method):''}</span></div>`}).join(''):'<div class="empty">Stored record has no comparable metric rows.</div>';
-let model=r.candidate||{},perf=r.candidate_performance||{};$('metadata').className='';$('metadata').innerHTML=`<div class="meta"><div><span>Model</span><b>${esc(model.model_id||r.candidate_fingerprint_inputs?.model_id)}</b></div><div><span>Revision</span><b>${esc(model.revision||r.candidate_fingerprint_inputs?.revision)}</b></div><div><span>Quantization</span><b>${esc(model.quantization_method)}</b></div><div><span>Runtime</span><b>${r.runtime_seconds==null?'Unavailable':n(r.runtime_seconds,2)+' sec'}</b></div><div><span>Performance</span><b>${Object.keys(perf).length?esc(JSON.stringify(perf)):'Unavailable'}</b></div><div><span>Tasks / samples</span><b>${esc((r.evaluation?.tasks||[]).join(', '))} / ${esc(r.evaluation?.limit??'full')}</b></div></div>`;
-drawChart(d.runs);$('history').innerHTML=d.runs.slice(0,8).map(x=>`<div class="row"><span>${esc(x.created_at?.slice(0,16)||x.experiment_id)}</span><b class="${esc(x.gate_status)}">${esc(x.gate_status)}</b></div>`).join('');let inj=d.injections||[],det=d.determinism||[];$('evidence').className=inj.length||det.length?'':'empty';$('evidence').innerHTML=(inj.length?inj.map(x=>`<div><div class="row"><b>Injection validation</b><span>${esc(x.file)}</span></div><div class="meta"><div><span>Detection rate</span><b>${x.detection_rate==null?'Unavailable':n(x.detection_rate*100,1)+'%'}</b></div><div><span>False-alarm rate</span><b>${x.false_alarm_rate==null?'Unavailable':n(x.false_alarm_rate*100,1)+'%'}</b></div><div><span>Scenarios / errors</span><b>${esc(x.outcomes?.length??'—')} / ${esc(x.error_count??'—')}</b></div><div><span>Mean runtime</span><b>${x.mean_seconds==null?'Unavailable':n(x.mean_seconds,2)+' sec'}</b></div></div></div>`).join(''):'')+(det.length?det.map(x=>`<div><div class="row"><b>Run-to-run consistency</b><span>${esc(x.file)} · ${esc(x.runs)} runs</span></div>${(x.metrics||[]).map(m=>`<div class="row"><span>${esc(m.task)} / ${esc(m.metric)} · SD ${n(m.stdev)}</span><b>${esc(m.identical?'identical':'varied')}</b></div>`).join('')}</div>`).join(''):'')||'No real experiment result files found. Simulation results are not shown as model measurements.';
-if(d.active){$('runstate').textContent=d.active.running?'Evaluation running…':`Finished with exit code ${d.active.exit_code}.`;$('logs').hidden=false;$('logs').textContent=d.active.output||'';if(d.active.running&&!runTimer)runTimer=setInterval(pollRun,1200);if(!d.active.running&&runTimer){clearInterval(runTimer);runTimer=null}}}catch(e){$('latest').className='empty';$('latest').textContent='Dashboard data error: '+e.message}}
-async function startRun(){let b=$('run');b.disabled=true;$('runstate').textContent='Starting configured comparison…';try{await api('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:$('config').value})});await pollRun();if(!runTimer)runTimer=setInterval(pollRun,1200)}catch(e){$('runstate').textContent=e.message;b.disabled=false}}
-async function pollRun(){try{let d=await api('/api/run');$('runstate').textContent=d.running?'Evaluation running…':`Finished with exit code ${d.exit_code}.`;$('logs').hidden=false;$('logs').textContent=d.output||'';$('run').disabled=d.running;if(!d.running){clearInterval(runTimer);runTimer=null;await refresh()}}catch(e){$('runstate').textContent=e.message;$('run').disabled=false}}
+const $=id=>document.getElementById(id);
+let DATA=null, runTimer=null;
+const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const fmt=(v,d=4)=>v==null||!Number.isFinite(Number(v))?"Unavailable":Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
+const titleCase=s=>String(s||"UNKNOWN").replaceAll("_"," ");
+async function api(url,options){const r=await fetch(url,options);const d=await r.json();if(!r.ok)throw Error(d.error||r.statusText);return d}
+function statusClass(s){return ["PASS","WARNING","FAIL","ERROR","BLOCKED","SKIPPED"].includes(s)?s:"uncertain"}
+function records(){return DATA?.runs||[]}
+function modelOf(r){return r?.candidate?.model_id||r?.candidate_fingerprint_inputs?.model_id||"Unknown model"}
+function methodOf(r){return r?.candidate?.quantization_method||r?.candidate?.precision||"Unknown method"}
+function tasksOf(r){return r?.evaluation?.tasks||[]}
+function allComparisons(r){return r?.comparisons||[]}
+function renderTable(rows,detail=true){
+  if(!rows.length)return '<div class="empty">No matching stored evaluations.</div>';
+  return `<div class="table-wrap"><table><thead><tr><th>Run / timestamp</th><th>Model</th><th>Quantization</th><th>Task</th><th>Accuracy / metric</th><th>Gate</th><th>Runtime</th><th>Report</th></tr></thead><tbody>${rows.map(r=>{
+    const cs=allComparisons(r),c=cs.find(x=>x.metric==="acc")||cs[0],s=r.decision?.status||r.gate_status;
+    const report=r.report_url?`<a href="${esc(r.report_url)}" target="_blank" rel="noopener">Open report</a>`:"Unavailable";
+    const cells=`<td><b>${esc(r.experiment_id)}</b><br><span class="muted">${esc(r.created_at)}</span></td><td>${esc(modelOf(r))}</td><td>${esc(methodOf(r))}</td><td>${esc(tasksOf(r).join(", ")||c?.task||"Unavailable")}</td><td>${c?`${fmt(c.baseline_value)} → ${fmt(c.candidate_value)}<br><span class="muted">Δ ${fmt(c.absolute_difference)}${c.difference_stderr!=null?` · SE ${fmt(c.difference_stderr)}`:""}</span>`:"Unavailable"}</td><td class="${statusClass(s)}">${esc(s)}</td><td>${r.runtime_seconds==null?"Unavailable":`${fmt(r.runtime_seconds,2)} s`}</td><td>${report}</td>`;
+    return `<tr>${cells}</tr>${detail?`<tr><td colspan="8"><details><summary>Run details · ${esc(r.name||r.config_hash||"configuration")}</summary><div class="grid"><div class="span-6"><p class="small muted">Baseline</p><pre>${esc(JSON.stringify(r.baseline||{},null,2))}</pre></div><div class="span-6"><p class="small muted">Candidate and gate checks</p><pre>${esc(JSON.stringify({candidate:r.candidate,checks:r.decision?.checks,notes:r.notes},null,2))}</pre></div></div></details></td></tr>`:""}`;
+  }).join("")}</tbody></table></div>`;
+}
+function metricRows(r){
+  const checks=r?.decision?.checks||[];
+  return allComparisons(r).map(c=>{
+    const check=checks.find(x=>x.scope==="quality"&&x.task===c.task&&x.metric===c.metric&&x.reference!=="previous_release");
+    return {...c,check};
+  }).filter(c=>c.baseline_value!=null&&c.candidate_value!=null);
+}
+function renderAccuracy(){
+  const latest=DATA?.latest, rows=metricRows(latest).filter(c=>c.metric==="acc");
+  const first=rows[0];
+  $("a-base").textContent=first?fmt(first.baseline_value):"Unavailable";
+  $("a-candidate").textContent=first?fmt(first.candidate_value):"Unavailable";
+  $("a-delta").textContent=first?`${fmt(first.absolute_difference*100,2)} pp`:"Unavailable";
+  $("a-status").innerHTML=latest?`<span class="${statusClass(latest.decision?.status)}">${esc(latest.decision?.status)}</span>`:"Unavailable";
+  $("a-base-note").textContent=first?`${esc(first.task)} · ${esc(first.metric)}`:"No stored accuracy result";
+  $("accuracy-table").innerHTML=renderMetricTable(metricRows(latest));
+  if(!rows.length){$("accuracy-chart").className="empty";$("accuracy-chart").textContent="No comparable accuracy metrics in the latest run.";return}
+  $("accuracy-chart").className="";
+  const max=Math.max(...rows.flatMap(r=>[r.baseline_value,r.candidate_value]));
+  const min=Math.min(0,...rows.flatMap(r=>[r.baseline_value,r.candidate_value]));
+  const range=Math.max(max-min,1e-9);
+  $("accuracy-chart").innerHTML=rows.map(r=>{
+    const bp=Math.max(2,100*(r.baseline_value-min)/range),cp=Math.max(2,100*(r.candidate_value-min)/range);
+    const decision=r.check?.status||r.status||"Unavailable";
+    return `<div class="bar-row"><b>${esc(r.task)}</b><div><div class="bar-track"><div class="bar" style="width:${bp}%"></div></div><div class="bar-track" style="margin-top:5px"><div class="bar candidate" style="width:${cp}%"></div></div></div><span class="${statusClass(decision)}">${fmt(r.candidate_value)} · ${esc(decision)}</span></div>`;
+  }).join("")+`<div class="legend"><span><i class="dot" style="background:var(--blue)"></i>Baseline</span><span><i class="dot" style="background:var(--cyan)"></i>Candidate</span><span class="muted">Amber threshold decision comes from the stored gate check.</span></div>`;
+}
+function renderMetricTable(rows){
+  if(!rows.length)return '<div class="empty">No stored baseline/candidate comparisons.</div>';
+  return `<div class="table-wrap"><table><thead><tr><th>Task / metric</th><th>Baseline</th><th>Candidate</th><th>Difference</th><th>Threshold</th><th>Uncertainty</th><th>Gate</th></tr></thead><tbody>${rows.map(c=>`<tr><td>${esc(c.task)} / ${esc(c.metric)}</td><td>${fmt(c.baseline_value)}</td><td>${fmt(c.candidate_value)}</td><td>${fmt(c.absolute_difference)}${c.metric==="acc"?` (${fmt(c.absolute_difference*100,2)} pp)`:""}</td><td>${esc(c.check?.threshold_display||"Unavailable")}</td><td>${esc(c.check?.noise_display||c.stderr_method||"Unavailable")}</td><td class="${statusClass(c.check?.status||c.status)}">${esc(c.check?.status||c.status||"Unavailable")}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function populateFilters(){
+  const sets={model:new Set(),method:new Set(),task:new Set()};
+  records().forEach(r=>{sets.model.add(modelOf(r));sets.method.add(methodOf(r));tasksOf(r).forEach(t=>sets.task.add(t))});
+  [["f-model",sets.model],["q-model",sets.model]].forEach(([id,set])=>fillSelect($(id),set,"All models"));
+  [["f-method",sets.method],["q-method",sets.method]].forEach(([id,set])=>fillSelect($(id),set,"All quantization methods"));
+  fillSelect($("f-task"),sets.task,"All tasks");
+}
+function fillSelect(el,set,label){
+  if(!el)return;const current=el.value;el.innerHTML=`<option value="">${esc(label)}</option>`+[...set].sort().map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");el.value=current;
+}
+function filteredRuns(){
+  const model=$("f-model").value,method=$("f-method").value,task=$("f-task").value,from=$("f-from").value,to=$("f-to").value;
+  return records().filter(r=>(!model||modelOf(r)===model)&&(!method||methodOf(r)===method)&&(!task||tasksOf(r).includes(task))&&(!from||String(r.created_at||"").slice(0,10)>=from)&&(!to||String(r.created_at||"").slice(0,10)<=to));
+}
+function renderSvgTrend(el,values,label,color){
+  if(!values.length){el.className="empty";el.textContent=`No measured ${label} values for these filters.`;return}
+  const w=700,h=230,p=40,nums=values.map(x=>Number(x.value)).filter(Number.isFinite);
+  if(!nums.length){el.className="empty";el.textContent=`${label} is unavailable in these runs.`;return}
+  let lo=Math.min(...nums),hi=Math.max(...nums);if(lo===hi){lo-=Math.abs(lo*.05)||1;hi+=Math.abs(hi*.05)||1}
+  const x=i=>p+(w-2*p)*(values.length===1?.5:i/(values.length-1));
+  const y=v=>h-p-(h-2*p)*(v-lo)/(hi-lo);
+  const points=values.map((v,i)=>`${x(i)},${y(Number(v.value))}`).join(" ");
+  el.className="";
+  el.innerHTML=`<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)} trend"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="#314159"/><polyline points="${points}" fill="none" stroke="${color}" stroke-width="3"/>${values.map((v,i)=>`<circle cx="${x(i)}" cy="${y(Number(v.value))}" r="4" fill="${color}"><title>${esc(v.label)}: ${fmt(v.value)}</title></circle>`).join("")}<text x="${p}" y="18">${fmt(hi)}</text><text x="${p}" y="${h-8}">${fmt(lo)}</text><text x="${p}" y="${h-2}">${esc(values[0].label)}</text><text x="${w-p}" y="${h-2}" text-anchor="end">${esc(values.at(-1).label)}</text></svg><div class="legend">${esc(label)} · values are from stored runs</div>`;
+}
+function renderExperiments(){
+  const runs=filteredRuns();
+  $("experiment-table").className="";
+  $("experiment-table").innerHTML=renderTable(runs,false);
+  const task=$("f-task").value;
+  const accuracy=[];
+  [...runs].reverse().forEach(r=>{
+    const c=allComparisons(r).find(c=>c.metric==="acc"&&(!task||c.task===task));
+    if(c)accuracy.push({label:String(r.created_at||r.experiment_id).slice(0,10),value:c.candidate_value});
+  });
+  renderSvgTrend($("trend-accuracy"),accuracy,"Candidate accuracy","var(--cyan)");
+  const runtime=[...runs].reverse().filter(r=>r.runtime_seconds!=null).map(r=>({label:String(r.created_at||r.experiment_id).slice(0,10),value:r.runtime_seconds}));
+  renderSvgTrend($("trend-runtime"),runtime,"Runtime (seconds)","var(--blue)");
+}
+function renderQuantization(){
+  const model=$("q-model").value,method=$("q-method").value;
+  const rows=records().filter(r=>(!model||modelOf(r)===model)&&(!method||methodOf(r)===method));
+  if(!rows.length){$("quant-table").className="empty";$("quant-table").textContent="No measured quantization runs match these filters.";return}
+  $("quant-table").className="";
+  $("quant-table").innerHTML=`<div class="table-wrap"><table><thead><tr><th>Model / method</th><th>Size before</th><th>Size after</th><th>Reduction</th><th>Latency</th><th>Throughput</th><th>Peak memory</th><th>Accuracy</th></tr></thead><tbody>${rows.map(r=>{
+    const b=r.baseline_performance||{},c=r.candidate_performance||{},acc=allComparisons(r).find(x=>x.metric==="acc");
+    const before=b.model_size_bytes,after=c.model_size_bytes;
+    const reduction=before>0&&after!=null?`${fmt((before-after)/before*100,2)}%`:"Unavailable";
+    return `<tr><td>${esc(modelOf(r))}<br><span class="muted">${esc(methodOf(r))}</span></td><td>${before==null?"Unavailable":`${fmt(before/1048576,2)} MiB`}</td><td>${after==null?"Unavailable":`${fmt(after/1048576,2)} MiB`}</td><td>${reduction}</td><td>${c.latency_ms_median==null?"Unavailable":`${fmt(c.latency_ms_median,2)} ms`}</td><td>${c.throughput_seq_per_s==null?"Unavailable":`${fmt(c.throughput_seq_per_s,2)} seq/s`}</td><td>${c.gpu_memory_mib==null?"Unavailable":`${fmt(c.gpu_memory_mib,1)} MiB`}</td><td>${acc?`${fmt(acc.baseline_value)} → ${fmt(acc.candidate_value)}`:"Unavailable"}</td></tr>`;
+  }).join("")}</tbody></table></div><p class="notice">Size and performance fields are shown only when measured and stored in the report.</p>`;
+}
+function renderLab(){
+  const injections=DATA?.injections||[],det=DATA?.determinism||[];
+  $("injection-data").className=injections.length?"":"empty";
+  $("injection-data").innerHTML=injections.length?injections.map(x=>`<details><summary>${esc(x.file)} · detection ${x.detection_rate==null?"Unavailable":fmt(x.detection_rate*100,1)+"%"} · false alarm ${x.false_alarm_rate==null?"Unavailable":fmt(x.false_alarm_rate*100,1)+"%"}</summary><pre>${esc(JSON.stringify(x,null,2))}</pre></details>`).join(""):"No validation result files found.";
+  $("determinism-data").className=det.length?"":"empty";
+  $("determinism-data").innerHTML=det.length?det.map(x=>`<details><summary>${esc(x.file)} · ${esc(x.runs)} runs</summary><pre>${esc(JSON.stringify(x,null,2))}</pre></details>`).join(""):"No determinism result files found.";
+  const real=records().filter(r=>!String(modelOf(r)).startsWith("toy/"));
+  $("real-runs").className=real.length?"":"empty";
+  $("real-runs").innerHTML=real.length?renderTable(real.slice(0,20),false):"No real-model runs found. Synthetic scenarios above are shown separately.";
+}
+function renderHistory(){
+  const q=$("history-search").value.toLowerCase(),s=$("history-status").value;
+  const rows=records().filter(r=>{
+    const hay=[r.experiment_id,r.name,modelOf(r),methodOf(r),tasksOf(r).join(" ")].join(" ").toLowerCase();
+    return (!q||hay.includes(q))&&(!s||(r.decision?.status||r.gate_status)===s);
+  });
+  $("history-table").className=rows.length?"":"empty";
+  $("history-table").innerHTML=rows.length?renderTable(rows,true):"No stored runs match the search and status filters.";
+}
+function renderOverview(){
+  const runs=records(),statuses=runs.map(r=>r.decision?.status||r.gate_status||"UNKNOWN");
+  $("k-total").textContent=DATA?.total_evaluations??runs.length;
+  $("k-pass").textContent=statuses.filter(s=>s==="PASS").length;
+  $("k-fail").textContent=statuses.filter(s=>s==="FAIL"||s==="ERROR").length;
+  $("k-warn").textContent=statuses.filter(s=>["WARNING","BLOCKED","SKIPPED","INCONCLUSIVE"].includes(s)).length;
+  const latest=DATA?.latest;
+  $("latest").className=latest?"":"empty";
+  $("latest").innerHTML=latest?`<div class="decision"><span class="decision-mark ${statusClass(latest.decision?.status)}">${esc(latest.decision?.status||"UNKNOWN")}</span><span class="pill">${esc(latest.created_at)}</span></div><p>${esc(latest.name||latest.experiment_id)}</p><p class="muted">${esc(modelOf(latest))} · ${esc(methodOf(latest))} · ${esc(tasksOf(latest).join(", ")||"No tasks recorded")}</p><p class="notice">${esc((latest.decision?.reasons||[]).join(" · ")||"No gate reason was stored.")}</p>${latest.report_url?`<a href="${esc(latest.report_url)}" target="_blank" rel="noopener">Open latest report →</a>`:""}`
+    :"No evaluations are stored yet.";
+  const models=[...new Set(runs.map(modelOf))];
+  $("models").className=models.length?"":"empty";
+  $("models").innerHTML=models.length?models.map(m=>`<div class="metric-row"><b>${esc(m)}</b><span class="muted">${runs.filter(r=>modelOf(r)===m).length} recent runs</span></div>`).join(""):"No model records.";
+  $("activity").className=runs.length?"":"empty";
+  $("activity").innerHTML=runs.length?renderTable(runs.slice(0,8),false):"No evaluation activity yet.";
+}
+function renderBaseline(){
+  const r=DATA?.latest;
+  $("baseline-meta").className=r?"":"empty";
+  $("baseline-meta").innerHTML=r?`<div class="grid"><div class="card span-6"><h3>Approved baseline</h3><pre>${esc(JSON.stringify(r.baseline||{},null,2))}</pre></div><div class="card span-6"><h3>Candidate</h3><pre>${esc(JSON.stringify(r.candidate||{},null,2))}</pre></div></div>`:"No baseline metadata is stored.";
+}
+function renderConfigs(){
+  const configs=DATA?.configs||[];
+  $("config-select").innerHTML=configs.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("config-list").innerHTML=configs.length?configs.map(c=>`<div class="metric-row"><b>${esc(c)}</b><span class="muted">Validated</span></div>`).join(""):"No validated YAML configs found.";
+  const show=()=>{$("config-content").textContent=DATA?.config_sources?.[$("config-select").value]||"Configuration contents unavailable."};
+  $("config-select").onchange=show;show();
+}
+async function refresh(){
+  $("alert").textContent="";
+  try{DATA=await api("/api/data");if(DATA.error){$("alert").textContent=DATA.error}
+    if(DATA.errors?.length)$("alert").textContent=DATA.errors.join(" · ");
+    populateFilters();renderOverview();renderAccuracy();renderQuantization();renderExperiments();renderLab();renderHistory();renderBaseline();renderConfigs();
+    updateRun();
+  }catch(e){$("alert").textContent=`Could not load dashboard data: ${e.message}`}
+}
+function updateRun(){
+  const run=DATA?.active;if(!run)return;
+  $("run-state").textContent=run.running?"Evaluation is running…":`Finished with exit code ${run.exit_code}.`;
+  $("run-log").hidden=false;$("run-log").textContent=run.output||"";
+  $("run-button").disabled=run.running;
+  if(run.running&&!runTimer)runTimer=setInterval(pollRun,1200);
+  if(!run.running&&runTimer){clearInterval(runTimer);runTimer=null}
+}
+async function pollRun(){
+  try{const d=await api("/api/run");$("run-state").textContent=d.running?"Evaluation is running…":`Finished with exit code ${d.exit_code}.`;$("run-log").hidden=false;$("run-log").textContent=d.output||"";$("run-button").disabled=!!d.running;if(!d.running){clearInterval(runTimer);runTimer=null;await refresh()}}
+  catch(e){$("run-state").textContent=e.message;$("run-button").disabled=false}
+}
+$("nav").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-page]");if(!b)return;
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===b.dataset.page));
+  $("crumb").textContent=b.textContent.trim().replace(/^[◈⌁▤⌗◎☷⚙]\s*/,"");
+});
+$("refresh").onclick=refresh;
+["f-model","f-method","f-task","f-from","f-to"].forEach(id=>$(id).addEventListener("change",renderExperiments));
+["q-model","q-method"].forEach(id=>$(id).addEventListener("change",renderQuantization));
+$("history-search").addEventListener("input",renderHistory);
+$("history-status").addEventListener("change",renderHistory);
+$("run-button").onclick=async()=>{
+  const config=$("config-select").value;if(!config){$("run-state").textContent="No validated config is available.";return}
+  $("run-button").disabled=true;$("run-state").textContent="Starting configured evaluation…";
+  try{await api("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({config})});await pollRun()}
+  catch(e){$("run-state").textContent=e.message;$("run-button").disabled=false}
+};
 refresh();
-</script></body></html>"""
-
-
-class _DashboardState:
-    def __init__(self, root: Path, database: Path = Path("quantguard.sqlite")):
-        self.root = root.resolve()
-        self.database = (self.root / database).resolve()
-        if self.database != self.root and self.root not in self.database.parents:
-            raise ValueError("The dashboard database must be inside the project root.")
-        self.lock = threading.Lock()
-        self.active: dict[str, Any] | None = None
-
-    def start(self, config: str) -> None:
-        configs = self.configs()
-        if config not in configs:
-            raise ValueError("Choose a configuration inside the project's configs directory.")
-        with self.lock:
-            if self.active and self.active.get("running"):
-                raise ValueError("An evaluation is already running.")
-            self.active = {"running": True, "output": "", "exit_code": None, "config": config}
-            threading.Thread(target=self._run, args=(config,), daemon=True).start()
-
-    def _run(self, config: str) -> None:
-        try:
-            proc = subprocess.Popen(
-                [sys.executable, "-m", "quantguard.cli.main", "run", "--config", config, "--skip-performance"],
-                cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                encoding="utf-8", errors="replace", env=os.environ.copy(),
-            )
-            output = ""
-            assert proc.stdout is not None
-            for line in proc.stdout:
-                output = (output + line)[-24000:]
-                with self.lock:
-                    if self.active:
-                        self.active["output"] = output
-            code = proc.wait()
-            with self.lock:
-                if self.active:
-                    self.active.update(running=False, exit_code=code, output=output)
-        except Exception as exc:
-            with self.lock:
-                if self.active:
-                    self.active.update(running=False, exit_code=2, output=str(exc))
-
-    def configs(self) -> list[str]:
-        folder = (self.root / "configs").resolve()
-        valid = []
-        for path in folder.glob("*.yaml"):
-            if not path.is_file():
-                continue
-            try:
-                load_config(path)
-            except ConfigurationError:
-                continue
-            valid.append(str(path.relative_to(self.root)).replace("\\", "/"))
-        return sorted(valid)
-
-    def data(self) -> dict[str, Any]:
-        db = self.database
-        runs: list[dict[str, Any]] = []
-        latest = None
-        errors: list[str] = []
-        if db.exists():
-            try:
-                store = ExperimentStore(db)
-                runs = store.list_recent(100)
-                for row in runs:
-                    try:
-                        latest = store.get(row["experiment_id"])
-                        if latest is not None:
-                            break
-                    except (json.JSONDecodeError, sqlite3.Error, OSError) as exc:
-                        errors.append(f"Skipped unreadable run {row.get('experiment_id')}: {exc}")
-            except (sqlite3.Error, OSError) as exc:
-                errors.append(f"Could not read run history: {exc}")
-        injections = []
-        for path in sorted((self.root / "reports").glob("**/validation_results.json"))[-12:]:
-            try:
-                record = json.loads(path.read_text(encoding="utf-8"))
-                if isinstance(record, dict):
-                    injections.append({**record, "file": str(path.relative_to(self.root)).replace("\\", "/")})
-                elif isinstance(record, list):
-                    injections.extend({**x, "file": str(path.relative_to(self.root)).replace("\\", "/")} for x in record if isinstance(x, dict))
-            except (OSError, json.JSONDecodeError):
-                continue
-        determinism = []
-        for path in sorted((self.root / "reports").glob("**/determinism.json"))[-12:]:
-            try:
-                record = json.loads(path.read_text(encoding="utf-8"))
-                if isinstance(record, dict):
-                    determinism.append({**record, "file": str(path.relative_to(self.root)).replace("\\", "/")})
-            except (OSError, json.JSONDecodeError):
-                continue
-        with self.lock:
-            active = dict(self.active) if self.active else None
-        return {"configs": self.configs(), "runs": runs, "latest": latest, "injections": injections, "determinism": determinism, "active": active, "errors": errors}
-
-
-def serve_dashboard(
-    root: Path,
-    host: str = "127.0.0.1",
-    port: int = 8765,
-    database: Path = Path("quantguard.sqlite"),
-) -> None:
-    """Serve the dashboard on localhost only."""
-    if host not in {"127.0.0.1", "localhost", "::1"}:
-        raise ValueError("The dashboard may only bind to localhost.")
-    state = _DashboardState(root, database)
-
-    class Handler(BaseHTTPRequestHandler):
-        def _json(self, data: Any, status: int = 200) -> None:
-            payload = json.dumps(data, default=str).encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(payload)
-
-        def do_GET(self) -> None:
-            route = urlparse(self.path).path
-            if route == "/":
-                payload = _PAGE.encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
-            elif route == "/api/data":
-                self._json(state.data())
-            elif route == "/api/run":
-                with state.lock:
-                    self._json(state.active or {"running": False, "exit_code": None, "output": ""})
-            else:
-                self._json({"error": "Not found"}, 404)
-
-        def do_POST(self) -> None:
-            if urlparse(self.path).path != "/api/run":
-                self._json({"error": "Not found"}, 404)
-                return
-            try:
-                size = int(self.headers.get("Content-Length", "0"))
-                if not 0 < size <= 2048:
-                    raise ValueError("Invalid request size.")
-                data = json.loads(self.rfile.read(size))
-                if not isinstance(data, dict) or not isinstance(data.get("config"), str):
-                    raise ValueError("A configuration name is required.")
-                state.start(data["config"])
-                self._json({"started": True}, 202)
-            except (ValueError, json.JSONDecodeError) as exc:
-                self._json({"error": str(exc)}, 400)
-
-        def log_message(self, fmt: str, *args: Any) -> None:
-            print("quantguard-dashboard:", fmt % args)
-
-    server = ThreadingHTTPServer((host, port), Handler)
-    print(f"QuantGuard dashboard: http://{host}:{port}")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("Dashboard stopped.")
-    finally:
-        server.server_close()
+</script>
+</body>
+</html>
