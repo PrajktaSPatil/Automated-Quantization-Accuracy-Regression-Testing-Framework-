@@ -38,7 +38,7 @@ _TRACKED_PACKAGES = (
 def _git_sha(repo: Path) -> str | None:
     try:
         completed = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
+            ["git", "-c", f"safe.directory={str(repo.resolve()).replace(chr(92), chr(47))}", "rev-parse", "HEAD"],
             cwd=repo,
             check=True,
             capture_output=True,

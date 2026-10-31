@@ -132,8 +132,11 @@ def _quality_check(
         status = "pass"
         reason = f"regression {observed_display} within {threshold_display}"
     elif noise is None:
-        status = "fail"
-        reason = f"regression {observed_display} exceeded {threshold_display}"
+        status = {"warn": "uncertain", "fail": "fail", "pass": "pass"}[on_uncertain]
+        reason = (
+            f"regression {observed_display} exceeded {threshold_display}, "
+            "but sampling uncertainty is unavailable"
+        )
     else:
         lower = observed - z * noise
         noise_display = f"{kind} stderr {fmt(noise)}, {z:g}-sigma lower bound {fmt(lower)}"

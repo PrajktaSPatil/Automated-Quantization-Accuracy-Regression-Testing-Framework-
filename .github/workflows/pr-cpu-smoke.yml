@@ -30,6 +30,6 @@ jobs:
       - uses: ./
         with:
           config: configs/cpu-smoke.yaml
-          install-extras: eval
+          install-extras: cpu-eval,dev
           torch-index-url: https://download.pytorch.org/whl/cpu
           extra-args: --skip-performance

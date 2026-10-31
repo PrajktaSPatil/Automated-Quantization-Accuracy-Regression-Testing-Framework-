@@ -26,7 +26,7 @@ from quantguard.results.schema import NormalizedEvaluation
 SCHEMA_VERSION = 1
 
 # Settings that change the numbers. A mismatch makes a stored score incomparable.
-_COMPARABLE_FIELDS = ("tasks", "limit", "num_fewshot", "seed", "dtype", "batch_size", "max_length")
+_COMPARABLE_FIELDS = ("tasks", "limit", "num_fewshot", "seed", "dtype", "batch_size", "max_length", "device", "paired")
 
 
 class BaselineRecord(BaseModel):
@@ -73,7 +73,7 @@ def comparability_problems(
     advisory: list[str] = []
     if backend_version and record.backend_version not in ("unknown", "None") and record.backend_version != backend_version:
         advisory.append(f"lm-eval: stored {record.backend_version} vs current {backend_version}")
-    for name in ("torch", "transformers", "torchao"):
+    for name in ("torch", "transformers", "torchao", "accelerate", "lm_eval", "numpy"):
         old, new = record.packages.get(name), packages.get(name)
         if old and new and old != new:
             advisory.append(f"{name}: stored {old} vs current {new}")
